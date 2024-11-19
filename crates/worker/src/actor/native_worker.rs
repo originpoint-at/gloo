@@ -44,7 +44,9 @@ macro_rules! worker_ext_impl {
             {
                 let handler = move |message: MessageEvent| {
                     let msg = CODEC::decode(message.data());
-                    handler(msg);
+                    if let Some(msg) = msg {
+                        handler(msg);
+                    }
                 };
                 let closure = Closure::wrap(Box::new(handler) as Box<dyn Fn(MessageEvent)>).into_js_value();
                 self.set_onmessage(Some(closure.as_ref().unchecked_ref()));
