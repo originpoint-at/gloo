@@ -10,7 +10,7 @@ pub trait Codec {
         I: Serialize;
 
     /// Decode a message to a type
-    fn decode<O>(input: JsValue) -> O
+    fn decode<O>(input: JsValue) ->Option<O> 
     where
         O: for<'de> Deserialize<'de>;
 }
@@ -24,15 +24,28 @@ impl Codec for Bincode {
     where
         I: Serialize,
     {
-        let buf = bincode::serialize(&input).expect("can't serialize an worker message");
-        Uint8Array::from(buf.as_slice()).into()
+        let buf = bincode::serialize(&input);
+        match buf {
+            Ok(data) => {
+                Uint8Array::from(data.as_slice()).into()
+            }
+            Err(_err) => {
+                JsValue::NULL
+            }
+        }
     }
 
-    fn decode<O>(input: JsValue) -> O
+    fn decode<O>(input: JsValue) -> Option<O>
     where
         O: for<'de> Deserialize<'de>,
     {
         let data = Uint8Array::from(input).to_vec();
-        bincode::deserialize(&data).expect("can't deserialize an worker message")
+        let result:Result<O,bincode::Error> = bincode::deserialize(&data);
+        match result {
+            Ok(value) => Some(value),
+            Err(_err) => {
+                None
+            } 
+        }
     }
 }
